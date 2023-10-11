@@ -21,7 +21,7 @@ export default function Book({ details, selectedShelf = 'none', moveToShelf }: {
                 ></div>
                 <div className="book-shelf-changer">
                     <select value={selectedShelf} onChange={e => moveToShelf?.(e.target.value as BookShelfType)}>
-                        <option value="none" disabled>
+                        <option value="" disabled>
                             Move to...
                         </option>
                         <option value="currentlyReading">
