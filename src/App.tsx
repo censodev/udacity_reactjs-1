@@ -1,40 +1,18 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react'
 import './App.css'
-import { getAll, search as searchBook } from './BookAPI'
+import { search as searchBook } from './BookAPI'
 import Book, { BookModel, BookShelfType } from './components/Book'
 import useDebounce from './hooks/useDebounce'
+import useLocalStorage from './hooks/useLocalStorage'
 
 function App() {
   const debounce = useDebounce()
   const [showSearchPage, setShowSearchpage] = useState(false)
-  const [books, setBooks] = useState<BookModel[]>([])
-  const [currentlyReading, setCurrentlyReading] = useState<BookModel[]>([])
-  const [wantToRead, setWantToRead] = useState<BookModel[]>([])
-  const [read, setRead] = useState<BookModel[]>([])
+  const [currentlyReading, setCurrentlyReading] = useLocalStorage<BookModel[]>('currentlyReading', [])
+  const [wantToRead, setWantToRead] = useLocalStorage<BookModel[]>('wantToRead', [])
+  const [read, setRead] = useLocalStorage<BookModel[]>('read', [])
   const [bookTextSearch, setBookTextSearch] = useState<string>('')
   const [searchedBooks, setSearchedBooks] = useState<BookModel[]>([])
-
-  useEffect(() => {
-    let ignore = false
-    getAll().then(rs => {
-      if (!ignore) {
-        console.log(rs);
-        setBooks(rs.map(map2BookModel))
-      }
-    })
-    return () => {
-      ignore = true
-    }
-  }, [])
-
-  useEffect(() => {
-    if (books.length >= 7) {
-      setCurrentlyReading(books.slice(0, 2))
-      setWantToRead(books.slice(2, 4))
-      setRead(books.slice(4, 7))
-    }
-  }, [books])
 
   useEffect(() => {
     if (!showSearchPage) {
@@ -42,15 +20,18 @@ function App() {
       setSearchedBooks([])
       return
     }
-    if (bookTextSearch && bookTextSearch.length > 0) {
+    if (bookTextSearch) {
       console.log('book search: ', bookTextSearch)
       searchBook(bookTextSearch, 10).then(rs => {
-        console.log(rs);
-        setSearchedBooks(rs.map(map2BookModel))
+        console.log('API searchBook:', rs);
+        setSearchedBooks(rs?.error ? [] : rs.map(map2BookModel))
       })
+    } else {
+      setSearchedBooks([])
     }
   }, [bookTextSearch, showSearchPage])
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function map2BookModel(b: any): BookModel {
     return {
       id: b.id,
@@ -66,11 +47,19 @@ function App() {
     setRead(read.filter(b => bookId !== b.id))
   }
 
+  function getShelfContainsBook(bookId: string): BookShelfType {
+    return currentlyReading.some(b => b.id === bookId)
+      ? 'currentlyReading'
+      : wantToRead.some(b => b.id === bookId)
+        ? 'wantToRead'
+        : read.some(b => b.id === bookId)
+          ? 'read'
+          : 'none'
+  }
+
   function moveToShelf(type: BookShelfType, book: BookModel) {
     console.log('moveToShelf: ', type, book);
-    if (currentlyReading.some(b => b.id === book.id) && type === 'currentlyReading'
-      || wantToRead.some(b => b.id === book.id) && type === 'wantToRead'
-      || read.some(b => b.id === book.id) && type === 'read') {
+    if (type !== 'none' && type === getShelfContainsBook(book.id)) {
       return
     }
     removeFromAllShelves(book.id)
@@ -113,7 +102,7 @@ function App() {
             <div className="search-books-results">
               <ol className="books-grid">
                 {searchedBooks.map(b => (
-                  <li key={b.id}><Book details={b} moveToShelf={type => moveToShelf(type, b)}></Book></li>
+                  <li key={b.id}><Book details={b} selectedShelf={getShelfContainsBook(b.id)} moveToShelf={type => moveToShelf(type, b)}></Book></li>
                 ))}
               </ol>
             </div>
@@ -130,7 +119,7 @@ function App() {
                   <div className="bookshelf-books">
                     <ol className="books-grid">
                       {currentlyReading.map(b => (
-                        <li key={b.id}><Book details={b} moveToShelf={type => moveToShelf(type, b)}></Book></li>
+                        <li key={b.id}><Book details={b} selectedShelf='currentlyReading' moveToShelf={type => moveToShelf(type, b)}></Book></li>
                       ))}
                     </ol>
                   </div>
@@ -140,7 +129,7 @@ function App() {
                   <div className="bookshelf-books">
                     <ol className="books-grid">
                       {wantToRead.map(b => (
-                        <li key={b.id}><Book details={b} moveToShelf={type => moveToShelf(type, b)}></Book></li>
+                        <li key={b.id}><Book details={b} selectedShelf='wantToRead' moveToShelf={type => moveToShelf(type, b)}></Book></li>
                       ))}
                     </ol>
                   </div>
@@ -150,7 +139,7 @@ function App() {
                   <div className="bookshelf-books">
                     <ol className="books-grid">
                       {read.map(b => (
-                        <li key={b.id}><Book details={b} moveToShelf={type => moveToShelf(type, b)}></Book></li>
+                        <li key={b.id}><Book details={b} selectedShelf='read' moveToShelf={type => moveToShelf(type, b)}></Book></li>
                       ))}
                     </ol>
                   </div>
