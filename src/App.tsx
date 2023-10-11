@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import { getAll } from './BookAPI'
-import Book, { BookModel } from './components/Book'
+import Book, { BookModel, BookShelfType } from './components/Book'
 
 function App() {
   const [showSearchPage, setShowSearchpage] = useState(false)
@@ -39,6 +39,35 @@ function App() {
     }
   }, [books])
 
+  function removeFromAllShelves(bookId: string) {
+    setCurrentlyReading(currentlyReading.filter(b => bookId !== b.id))
+    setWantToRead(wantToRead.filter(b => bookId !== b.id))
+    setRead(read.filter(b => bookId !== b.id))
+  }
+
+  function moveToShelf(type: BookShelfType, book: BookModel) {
+    console.log('moveToShelf: ', type, book);
+    if (currentlyReading.some(b => b.id === book.id) && type === 'currentlyReading'
+      || wantToRead.some(b => b.id === book.id) && type === 'wantToRead'
+      || read.some(b => b.id === book.id) && type === 'read') {
+      return
+    }
+    removeFromAllShelves(book.id)
+    switch (type) {
+      case 'currentlyReading':
+        setCurrentlyReading([...currentlyReading, book])
+        break
+      case 'wantToRead':
+        setWantToRead([...wantToRead, book])
+        break
+      case 'read':
+        setRead([...read, book])
+        break
+      case 'none':
+      default:
+        break
+    }
+  }
 
   return (
     <>
@@ -75,7 +104,7 @@ function App() {
                   <div className="bookshelf-books">
                     <ol className="books-grid">
                       {currentlyReading.map(b => (
-                        <li key={b.id}><Book details={b}></Book></li>
+                        <li key={b.id}><Book details={b} moveToShelf={type => moveToShelf(type, b)}></Book></li>
                       ))}
                     </ol>
                   </div>
@@ -85,7 +114,7 @@ function App() {
                   <div className="bookshelf-books">
                     <ol className="books-grid">
                       {wantToRead.map(b => (
-                        <li key={b.id}><Book details={b}></Book></li>
+                        <li key={b.id}><Book details={b} moveToShelf={type => moveToShelf(type, b)}></Book></li>
                       ))}
                     </ol>
                   </div>
@@ -95,7 +124,7 @@ function App() {
                   <div className="bookshelf-books">
                     <ol className="books-grid">
                       {read.map(b => (
-                        <li key={b.id}><Book details={b}></Book></li>
+                        <li key={b.id}><Book details={b} moveToShelf={type => moveToShelf(type, b)}></Book></li>
                       ))}
                     </ol>
                   </div>
