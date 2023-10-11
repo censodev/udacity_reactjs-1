@@ -1,29 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react'
 import './App.css'
-import { getAll } from './BookAPI'
+import { getAll, search as searchBook } from './BookAPI'
 import Book, { BookModel, BookShelfType } from './components/Book'
+import useDebounce from './hooks/useDebounce'
 
 function App() {
+  const debounce = useDebounce()
   const [showSearchPage, setShowSearchpage] = useState(false)
   const [books, setBooks] = useState<BookModel[]>([])
   const [currentlyReading, setCurrentlyReading] = useState<BookModel[]>([])
   const [wantToRead, setWantToRead] = useState<BookModel[]>([])
   const [read, setRead] = useState<BookModel[]>([])
+  const [bookTextSearch, setBookTextSearch] = useState<string>('')
+  const [searchedBooks, setSearchedBooks] = useState<BookModel[]>([])
 
   useEffect(() => {
     let ignore = false
     getAll().then(rs => {
       if (!ignore) {
         console.log(rs);
-        setBooks(rs.map((b: any) => {
-          return {
-            id: b.id,
-            cover: b.imageLinks.thumbnail,
-            title: b.title,
-            authors: b.authors,
-          } as BookModel
-        }))
+        setBooks(rs.map(map2BookModel))
       }
     })
     return () => {
@@ -38,6 +35,30 @@ function App() {
       setRead(books.slice(4, 7))
     }
   }, [books])
+
+  useEffect(() => {
+    if (!showSearchPage) {
+      setBookTextSearch('')
+      setSearchedBooks([])
+      return
+    }
+    if (bookTextSearch && bookTextSearch.length > 0) {
+      console.log('book search: ', bookTextSearch)
+      searchBook(bookTextSearch, 10).then(rs => {
+        console.log(rs);
+        setSearchedBooks(rs.map(map2BookModel))
+      })
+    }
+  }, [bookTextSearch, showSearchPage])
+
+  function map2BookModel(b: any): BookModel {
+    return {
+      id: b.id,
+      cover: b.imageLinks.thumbnail,
+      title: b.title,
+      authors: b.authors,
+    } as BookModel
+  }
 
   function removeFromAllShelves(bookId: string) {
     setCurrentlyReading(currentlyReading.filter(b => bookId !== b.id))
@@ -85,11 +106,16 @@ function App() {
                 <input
                   type="text"
                   placeholder="Search by title, author, or ISBN"
+                  onChange={e => debounce(() => setBookTextSearch(e.target.value))}
                 />
               </div>
             </div>
             <div className="search-books-results">
-              <ol className="books-grid"></ol>
+              <ol className="books-grid">
+                {searchedBooks.map(b => (
+                  <li key={b.id}><Book details={b} moveToShelf={type => moveToShelf(type, b)}></Book></li>
+                ))}
+              </ol>
             </div>
           </div>
         ) : (
