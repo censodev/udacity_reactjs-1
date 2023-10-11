@@ -4,8 +4,9 @@ import { search as searchBook } from './BookAPI'
 import Book, { BookModel, BookShelfType } from './components/Book'
 import useDebounce from './hooks/useDebounce'
 import useLocalStorage from './hooks/useLocalStorage'
+import BookShelf from './components/BookShelf'
 
-function App() {
+export default function App() {
   const debounce = useDebounce()
   const [showSearchPage, setShowSearchpage] = useState(false)
   const [currentlyReading, setCurrentlyReading] = useLocalStorage<BookModel[]>('currentlyReading', [])
@@ -35,7 +36,7 @@ function App() {
   function map2BookModel(b: any): BookModel {
     return {
       id: b.id,
-      cover: b.imageLinks.thumbnail,
+      cover: b?.imageLinks?.thumbnail,
       title: b.title,
       authors: b.authors,
     } as BookModel
@@ -114,36 +115,24 @@ function App() {
             </div>
             <div className="list-books-content">
               <div>
-                <div className="bookshelf">
-                  <h2 className="bookshelf-title">Currently Reading</h2>
-                  <div className="bookshelf-books">
-                    <ol className="books-grid">
-                      {currentlyReading.map(b => (
-                        <li key={b.id}><Book details={b} selectedShelf='currentlyReading' moveToShelf={type => moveToShelf(type, b)}></Book></li>
-                      ))}
-                    </ol>
-                  </div>
-                </div>
-                <div className="bookshelf">
-                  <h2 className="bookshelf-title">Want to Read</h2>
-                  <div className="bookshelf-books">
-                    <ol className="books-grid">
-                      {wantToRead.map(b => (
-                        <li key={b.id}><Book details={b} selectedShelf='wantToRead' moveToShelf={type => moveToShelf(type, b)}></Book></li>
-                      ))}
-                    </ol>
-                  </div>
-                </div>
-                <div className="bookshelf">
-                  <h2 className="bookshelf-title">Read</h2>
-                  <div className="bookshelf-books">
-                    <ol className="books-grid">
-                      {read.map(b => (
-                        <li key={b.id}><Book details={b} selectedShelf='read' moveToShelf={type => moveToShelf(type, b)}></Book></li>
-                      ))}
-                    </ol>
-                  </div>
-                </div>
+                <BookShelf
+                  title='Currently Reading'
+                  type='currentlyReading'
+                  books={currentlyReading}
+                  moveToShelf={moveToShelf}
+                ></BookShelf>
+                <BookShelf
+                  title='Want to Read'
+                  type='wantToRead'
+                  books={wantToRead}
+                  moveToShelf={moveToShelf}
+                ></BookShelf>
+                <BookShelf
+                  title='Read'
+                  type='read'
+                  books={read}
+                  moveToShelf={moveToShelf}
+                ></BookShelf>
               </div>
             </div>
             <div className="open-search">
@@ -155,5 +144,3 @@ function App() {
     </>
   )
 }
-
-export default App
