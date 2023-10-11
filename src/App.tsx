@@ -22,9 +22,7 @@ export default function App() {
       return
     }
     if (bookTextSearch) {
-      console.log('book search: ', bookTextSearch)
       searchBook(bookTextSearch, 10).then(rs => {
-        console.log('API searchBook:', rs);
         setSearchedBooks(rs?.error ? [] : rs.map(map2BookModel))
       })
     } else {
@@ -59,7 +57,6 @@ export default function App() {
   }
 
   function moveToShelf(type: BookShelfType, book: BookModel) {
-    console.log('moveToShelf: ', type, book);
     if (type !== 'none' && type === getShelfContainsBook(book.id)) {
       return
     }
